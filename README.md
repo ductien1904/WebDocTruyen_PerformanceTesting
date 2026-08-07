@@ -116,14 +116,9 @@ Commit message mẫu: `tests: add locust testcase for chapter management`.
 
 ## Liên hệ
 - Chủ repo / liên hệ: @ductien1904
+- Email: boyndt1904@gmail.com
 
-## License
-Nếu repository chưa có license, cân nhắc thêm `LICENSE` (ví dụ MIT) để cho phép chia sẻ script kiểm thử.
 
----
-
-Nếu bạn muốn, mình có thể tiếp tục các bước sau cho bạn:
-1. Tự động thêm ví dụ lệnh headless với timestamped output (mình sẽ chỉnh README và thêm script ví dụ `tests/run_locust_headless.sh`).
 2. Tạo template test case trong `tests/testcases/` và ví dụ cách export bằng `export_testcase.py` (mình sẽ đọc file và tạo template phù hợp).
 3. Dịch README sang tiếng Anh hoặc làm song ngữ.
 
