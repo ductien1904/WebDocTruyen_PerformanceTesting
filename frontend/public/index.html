@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Đọc Truyện</title>
+    <link rel="stylesheet" href="/web_doc_truyen/frontend/public/css/theloai_user.css">
+    <link rel="stylesheet" href="/web_doc_truyen/frontend/public/css/home.css?v=20260403-1">
+    <link rel="stylesheet" href="/web_doc_truyen/frontend/public/css/theo_doi_truyen.css?v=20260408-5">
+    <link rel="stylesheet" href="../public/fonts/fontawesome-free-7.2.0-web/css/all.min.css">
+    <script src="/web_doc_truyen/frontend/public/js/theodoi.js?v=20260413-2"></script>
+</head>
+<body>
+    <div id="header-container"></div>
+
+    <section class="stories">
+        <div class="container">
+            <h2>Danh Sách Truyện</h2>
+            <div class="story-grid" id="story-grid">
+                <div class="story-status">Đang tải danh sách truyện...</div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const headerContainer = document.getElementById('header-container');
+        const storyGrid = document.getElementById('story-grid');
+        let homeRefreshTimer = null;
+        let isLoadingStories = false;
+        let cachedLoginStatus = null;
+        let cachedLoginCheckedAt = 0;
+
+        async function loadHeader() {
+            try {
+                const response = await fetch('/web_doc_truyen/frontend/view/layouts/user/header.html?v=20260413-1', {
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Không tải được header.html');
+                }
+
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const header = doc.querySelector('header');
+                const scripts = doc.querySelectorAll('script');
+
+                if (!header) {
+                    throw new Error('Không tìm thấy thẻ header trong header.html');
+                }
+
+                headerContainer.innerHTML = header.outerHTML;
+
+                scripts.forEach((script) => {
+                    const runtimeScript = document.createElement('script');
+                    if (script.src) {
+                        runtimeScript.src = script.src;
+                    } else {
+                        runtimeScript.textContent = script.textContent;
+                    }
+                    document.body.appendChild(runtimeScript);
+                });
+            } catch (error) {
+                console.error('Lỗi tải header:', error);
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatViewCount(value) {
+            return Number(value || 0).toLocaleString('vi-VN');
+        }
+
+        function resolveCoverUrl(anhBia) {
+            if (!anhBia) {
+                return 'https://via.placeholder.com/180x240/2c3e50/ffffff?text=No+Image';
+            }
+
+            let normalized = String(anhBia).trim().replace(/\\/g, '/');
+
+            if (normalized.startsWith('http://') || normalized.startsWith('https://') || normalized.startsWith('/')) {
+                if (!normalized.startsWith('/web_doc_truyen/')) {
+                    return normalized;
+                }
+                normalized = normalized.replace(/^\/web_doc_truyen\//, '');
+            }
+
+            if (normalized.startsWith('web_doc_truyen/')) {
+                normalized = normalized.replace(/^web_doc_truyen\//, '');
+            }
+
+            const legacyPrefixes = [
+                'uploads/anhbia/',
+                'frontend/public/uploads/anhbia/',
+                'frontend/images/anhbia/',
+                'images/anhbia/',
+                'backend/uploads/anhbia/'
+            ];
+
+            for (const prefix of legacyPrefixes) {
+                if (normalized.startsWith(prefix)) {
+                    const parts = normalized.split('/').filter(Boolean);
+                    const fileName = parts[parts.length - 1] || '';
+                    if (fileName) {
+                        return '/web_doc_truyen/backend/uploads/anhbia/' + fileName;
+                    }
+                }
+            }
+
+            if (normalized.startsWith('backend/') || normalized.startsWith('frontend/')) {
+                return '/web_doc_truyen/' + normalized;
+            }
+
+            return '/web_doc_truyen/' + normalized;
+        }
+
+        function renderStories(stories) {
+            if (!Array.isArray(stories) || stories.length === 0) {
+                storyGrid.innerHTML = '<div class="story-status"><h3>Chưa có truyện nào</h3><p>Vui lòng quay lại sau</p></div>';
+                return;
+            }
+
+            storyGrid.innerHTML = stories.map((story) => {
+                const title = escapeHtml(story.ten_truyen || 'Không có tiêu đề');
+                const author = escapeHtml(story.tac_gia || 'Chưa rõ');
+                const cover = resolveCoverUrl(story.anh_bia);
+                const storyId = Number(story.id || 0);
+
+                return `
+                    <article class="story-card" data-story-id="${storyId}">
+                        <a href="/web_doc_truyen/frontend/view/truyen/chitiet.html?id=${storyId}">
+                            <img src="${cover}" alt="${title}" onerror="this.src='https://via.placeholder.com/180x240/2c3e50/ffffff?text=No+Image'">
+                            <h3>${title}</h3>
+                            <p>Tác giả: ${author}</p>
+                            <div class="story-meta">
+                                <span></span>
+                            </div>
+                        </a>
+                    </article>
+                `;
+            }).join('');
+
+            initializeTheoDoiTruyen();
+        }
+
+        function getLoginStatusFromHeaderDom() {
+            const navRight = headerContainer.querySelector('#nav-right');
+            if (!navRight) {
+                return null;
+            }
+
+            if (navRight.querySelector('.logout-outside')) {
+                return true;
+            }
+
+            const loginLink = navRight.querySelector('.login-state-btn');
+            if (loginLink && /đăng\s*nhập/i.test(loginLink.textContent || '')) {
+                return false;
+            }
+
+            return null;
+        }
+
+        async function checkUserLoggedIn() {
+            const domStatus = getLoginStatusFromHeaderDom();
+            if (domStatus !== null) {
+                cachedLoginStatus = domStatus;
+                cachedLoginCheckedAt = Date.now();
+                return domStatus;
+            }
+
+            const now = Date.now();
+            if (cachedLoginStatus !== null && now - cachedLoginCheckedAt < 10000) {
+                return cachedLoginStatus;
+            }
+
+            try {
+                const response = await fetch('/web_doc_truyen/backend/api/theloai/theloai_header_api.php', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Không kiểm tra được trạng thái đăng nhập.');
+                }
+
+                const data = await response.json();
+                const isLoggedIn = Boolean(data && data.user && data.user.isLoggedIn);
+                cachedLoginStatus = isLoggedIn;
+                cachedLoginCheckedAt = now;
+                return isLoggedIn;
+            } catch (error) {
+                console.warn('Không kiểm tra được trạng thái đăng nhập:', error);
+                return false;
+            }
+        }
+
+        function bindStoryLoginGuard() {
+            storyGrid.addEventListener('click', async function (event) {
+                if (event.target.closest('.follow-card-button')) {
+                    return;
+                }
+
+                const storyLink = event.target.closest('.story-card a[href]');
+                if (!storyLink) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const isLoggedIn = await checkUserLoggedIn();
+                if (!isLoggedIn) {
+                    window.alert('Bạn cần đăng nhập để đọc truyện.');
+                    return;
+                }
+
+                window.location.href = storyLink.href;
+            });
+        }
+
+        async function loadStories() {
+            if (isLoadingStories) {
+                return;
+            }
+
+            isLoadingStories = true;
+            try {
+                const response = await fetch('/web_doc_truyen/backend/api/truyen/truyen_api.php');
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Không thể tải dữ liệu truyện');
+                }
+
+                renderStories(data.stories || []);
+            } catch (error) {
+                console.error('Lỗi tải danh sách truyện:', error);
+                storyGrid.innerHTML = '<div class="story-status"><h3>Không tải được dữ liệu</h3><p>Vui lòng thử lại sau.</p></div>';
+            } finally {
+                isLoadingStories = false;
+            }
+        }
+
+        function scheduleHomeRefresh() {
+            if (homeRefreshTimer) {
+                clearTimeout(homeRefreshTimer);
+            }
+
+            homeRefreshTimer = setTimeout(() => {
+                loadStories();
+                homeRefreshTimer = null;
+            }, 120);
+        }
+
+        loadHeader();
+        loadStories();
+        bindStoryLoginGuard();
+
+        window.addEventListener('pageshow', scheduleHomeRefresh);
+        window.addEventListener('focus', scheduleHomeRefresh);
+        window.addEventListener('followingUpdated', scheduleHomeRefresh);
+        window.addEventListener('storage', function (event) {
+            if (event.key === 'followListUpdatedAt' || event.key === 'followedStoryIds') {
+                scheduleHomeRefresh();
+            }
+        });
+    </script>
+</body>
+</html>
+
+
