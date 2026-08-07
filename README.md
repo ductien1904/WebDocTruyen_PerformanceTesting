@@ -146,8 +146,5 @@ Commit message mẫu: `tests: add locust testcase for chapter management`.
 
 ## Liên hệ
 - Chủ repo / liên hệ: @ductien1904
+- Email: boyndt1904@gmail.com
 
-2. Tạo template test case trong `tests/testcases/` và ví dụ cách export bằng `export_testcase.py` (mình sẽ đọc file và tạo template phù hợp).
-3. Dịch README sang tiếng Anh hoặc làm song ngữ.
-
-Bạn muốn mình làm tiếp bước nào?
