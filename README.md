@@ -1,6 +1,36 @@
 # WebDocTruyen — Performance Testing (Tập trung vào kiểm thử)
 
-> Repository này chuyên cho mục đích kiểm thử hiệu năng (performance testing) của dự án WebDocTruyen. Nếu bạn chủ yếu làm về kiểm thử, README này sẽ tóm tắt cách thiết lập, chạy kịch bản kiểm thử (Locust), xuất kết quả và quy trình đóng góp test case.
+## Giới thiệu về WebDocTruyen
+WebDocTruyen là một ứng dụng web cho phép người dùng đọc và quản lý truyện trực tuyến. Ứng dụng hỗ trợ:
+- Duyệt danh mục truyện (catalog), trang chủ hiển thị các truyện nổi bật
+- Đọc chương (trang nội dung có thể dài, ảnh hưởng tới trải nghiệm đọc)
+- Đăng nhập/đăng ký người dùng
+- Giao diện quản lý chương cho biên tập viên (thêm/sửa/xóa chương)
+
+Người dùng chính: độc giả (readers) và biên tập viên/administrator (editors/admins).
+
+Các luồng/endpoint quan trọng (ví dụ):
+- /web_doc_truyen/frontend/public/index.html (trang chủ)
+- /web_doc_truyen/frontend/view/chuong/*.html (quản lý chương: add/edit/delete)
+- /web_doc_truyen/frontend/view/log/login.html (xử lý đăng nhập)
+
+Mục tiêu kiểm thử ban đầu (gợi ý):
+- P95 < 300 ms cho trang chủ và các luồng đọc chính
+- Error rate < 1% dưới tải thử nghiệm (ví dụ 200 users)
+- Giữ throughput ổn định (RPS) ở mức mong muốn theo yêu cầu
+
+---
+
+## Short intro (English)
+WebDocTruyen is a web application for reading and managing online stories/comics. Key user flows to test are:
+- Homepage (catalog)
+- Chapter reading (heavy content pages)
+- Chapter management (create/update/delete)
+- Authentication (login)
+
+Initial performance goals (suggested): P95 < 300ms for main read paths, error rate < 1% under target load.
+
+---
 
 ## Tổng quan
 Repository chứa:
@@ -30,7 +60,7 @@ Mình đã xem `tests/test_locust.py` và kịch bản thực hiện các thao t
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate  # macOS / Linux
-.\.venv\Scripts\activate   # Windows (PowerShell)
+.\\.venv\\Scripts\\activate   # Windows (PowerShell)
 pip install -U pip
 pip install locust
 # Nếu repo có requirements.txt trong tests/:
@@ -116,9 +146,14 @@ Commit message mẫu: `tests: add locust testcase for chapter management`.
 
 ## Liên hệ
 - Chủ repo / liên hệ: @ductien1904
-- Email: boyndt1904@gmail.com
 
+## License
+Nếu repository chưa có license, cân nhắc thêm `LICENSE` (ví dụ MIT) để cho phép chia sẻ script kiểm thử.
 
+---
+
+Nếu bạn muốn, mình có thể tiếp tục các bước sau cho bạn:
+1. Tự động thêm ví dụ lệnh headless với timestamped output (mình sẽ chỉnh README và thêm script ví dụ `tests/run_locust_headless.sh`).
 2. Tạo template test case trong `tests/testcases/` và ví dụ cách export bằng `export_testcase.py` (mình sẽ đọc file và tạo template phù hợp).
 3. Dịch README sang tiếng Anh hoặc làm song ngữ.
 
