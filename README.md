@@ -1,103 +1,130 @@
-# WebDocTruyen Performance Testing
+# WebDocTruyen — Performance Testing (Tập trung vào kiểm thử)
 
-Một repository chứa mã nguồn và tài liệu cho kiểm thử hiệu năng (performance testing) của dự án WebDocTruyen.
+> Repository này chuyên cho mục đích kiểm thử hiệu năng (performance testing) của dự án WebDocTruyen. Nếu bạn chủ yếu làm về kiểm thử, README này sẽ tóm tắt cách thiết lập, chạy kịch bản kiểm thử (Locust), xuất kết quả và quy trình đóng góp test case.
 
-## Mô tả
+## Tổng quan
+Repository chứa:
+- `frontend/` — mã frontend (tham khảo giao diện real requests)
+- `backend/` — mã server (PHP) để target trong kiểm thử
+- `database/` — script/dump DB dùng cho môi trường test
+- `tests/` — tất cả kịch bản kiểm thử, helper scripts và thư mục kết quả
+- `docs/` — tài liệu phụ trợ (ví dụ `comment-change-log.md`)
 
-Repository này tổng hợp mã frontend, backend, dữ liệu cơ sở dữ liệu và bộ kiểm thử hiệu năng để đo và tối ưu hóa hiệu năng của WebDocTruyen. Mục tiêu là cung cấp các kịch bản, cấu hình và tài liệu để chạy thử tải, thu thập số liệu và tìm điểm nghẽn hiệu năng.
-
-## Ngôn ngữ & Công nghệ chính
-- CSS, SCSS, HTML, JavaScript — giao diện & tài nguyên frontend
-- PHP — backend (API / server-side)
-- Python — scripts kiểm thử/performance nhỏ
-
-(Tỷ lệ ngôn ngữ theo phân tích repository: CSS 23.4%, JavaScript 22.7%, SCSS 20.9%, PHP 16.6%, HTML 15.3%, Python 1.1%)
-
-## Cấu trúc thư mục
-- `.vscode/` — cấu hình editor (tùy chọn)
-- `frontend/` — mã nguồn frontend (HTML/CSS/JS/SCSS)
-- `backend/` — mã nguồn server (PHP)
-- `database/` — các script / dump liên quan tới cơ sở dữ liệu
-- `tests/` — kịch bản kiểm thử hiệu năng, script tự động
-- `docs/` — tài liệu bổ sung (ví dụ: `comment-change-log.md`)
-
-## Hướng dẫn nhanh (Quick start)
-Các bước dưới đây mang tính hướng dẫn chung; hãy điều chỉnh theo cấu hình thực tế trong repo.
-
-1. Clone repository
-
-```bash
-git clone https://github.com/ductien1904/WebDocTruyen_PerformanceTesting.git
-cd WebDocTruyen_PerformanceTesting
-```
-
-2. Backend (PHP)
-- Nếu backend là các file PHP thuần, bạn có thể chạy máy chủ PHP built-in cho môi trường phát triển:
-
-```bash
-# Từ thư mục gốc (hoặc vào thư mục backend nếu cần)
-php -S localhost:8000 -t backend/
-```
-
-- Nếu dự án dùng Docker, Composer hoặc framework (Laravel, Symfony...), dùng lệnh tương ứng (docker-compose up, composer install, v.v.). Xem nội dung trong `backend/` để biết lệnh chính xác.
-
-3. Frontend
-- Nếu frontend là static site: mở `frontend/index.html` trong trình duyệt hoặc host bằng một HTTP server tĩnh.
-- Nếu có `package.json` (Node.js), cài phụ thuộc và chạy:
-
-```bash
-cd frontend
-npm install
-npm run dev # hoặc npm start
-```
-
-4. Cơ sở dữ liệu
-- Import các script SQL hoặc cấu hình từ `database/`. Ví dụ:
-
-```bash
-# Ví dụ (MySQL)
-mysql -u <user> -p <database_name> < database/dump.sql
-```
-
-5. Chạy kiểm thử hiệu năng
-- Thư mục `tests/` chứa các kịch bản kiểm thử. Nếu có file `requirements.txt` hoặc phụ thuộc Python:
-
-```bash
-cd tests
-python -m venv .venv
-source .venv/bin/activate  # trên macOS/Linux
-pip install -r requirements.txt  # nếu có
-
-# Chạy pytest nếu dùng pytest
-pytest
-
-# Hoặc chạy Locust nếu repo cung cấp locustfile
-locust -f locustfile.py
-```
-
-Lưu ý: Điều chỉnh theo nội dung thực tế trong `tests/`. Nếu bạn không thấy các file yêu cầu, mở `tests/` để kiểm tra README hoặc script cụ thể.
-
-## Ghi chú về đo đạc & thu thập số liệu
-- Bật logging và thu thập metrics (CPU, memory, response times, error rates) khi chạy các bài kiểm thử.
-- Có thể sử dụng các công cụ như Locust, JMeter, k6, Gatling hoặc custom Python scripts.
-- Lưu trữ kết quả ở thư mục `tests/results/` (hoặc nơi phù hợp) và đính kèm file log / báo cáo vào PR khi chia sẻ kết quả.
-
-## Tài liệu
-- Xem `docs/comment-change-log.md` để biết lịch sử thay đổi liên quan tới comment hoặc ghi chú phát triển.
-
-## Cách đóng góp
-1. Fork repository
-2. Tạo branch feature: `git checkout -b feature/my-change`
-3. Commit thay đổi, push và tạo Pull Request
-
-Vui lòng mô tả rõ: cách tái tạo, bước chạy test, kết quả trước/sau và bất kỳ ảnh hưởng hiệu năng nào.
-
-## Liên hệ
-- Tác giả / chủ repo: @ductien1904
-
-## License
-Thêm thông tin license nếu cần — nếu chưa có, cân nhắc thêm file `LICENSE` với giấy phép mong muốn (MIT, Apache 2.0, v.v.).
+Mục tiêu chính: nhanh chóng chạy các bài kiểm thử tải/độ bền, thu thập số liệu (latency, throughput, errors), và dễ chia sẻ kết quả để phân tích.
 
 ---
 
-Bạn muốn mình thêm badge (CI / coverage / license) hay hướng dẫn chi tiết từ file cấu hình cụ thể trong repo không?
+## Tập trung kiểm thử (Testing-first)
+Nếu bạn chủ yếu làm kiểm thử, hãy chú ý đến thư mục `tests/`. Hiện tại repo có các file sau (liên quan đến kiểm thử):
+- `tests/test_locust.py` — kịch bản Locust (locustfile) chứa các hành vi người dùng mẫu (tham khảo `tests/test_locust.py` trong repo).
+- `tests/export_testcase.py` — (nếu tồn tại) script hỗ trợ xuất/import test case (mở file để xem chi tiết).
+- `tests/results/` — nơi lưu kết quả/CSV/ báo cáo khi chạy headless.
+
+Mình đã xem `tests/test_locust.py` và kịch bản thực hiện các thao tác cơ bản như login, truy cập trang chủ và một nhóm route liên quan tới chapter management.
+
+---
+
+## Cài đặt nhanh cho kiểm thử (Locust)
+1. Tạo virtualenv và cài dependency:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # macOS / Linux
+.\.venv\Scripts\activate   # Windows (PowerShell)
+pip install -U pip
+pip install locust
+# Nếu repo có requirements.txt trong tests/:
+# pip install -r tests/requirements.txt
+```
+
+2. Chạy Locust ở chế độ tương tác (UI):
+
+```bash
+# host là địa chỉ backend / ứng dụng đang chạy, ví dụ http://localhost:8000
+locust -f tests/test_locust.py --host http://localhost:8000
+# sau đó mở http://localhost:8089 để cấu hình số lượng users (spawn) và chạy
+```
+
+3. Chạy Locust headless (thường dùng cho CI / thu thập kết quả tự động):
+
+```bash
+# ví dụ chạy 200 user, spawn rate 20 user/s, trong 10 phút, lưu CSV vào tests/results/
+locust -f tests/test_locust.py --host http://localhost:8000 --headless -u 200 -r 20 -t 10m --csv=tests/results/run1
+```
+
+Các file CSV tạo ra: `run1_stats.csv`, `run1_failures.csv`, `run1_requests.csv` — dùng để phân tích sau.
+
+4. Thực thi trong Docker / CI
+- Nếu muốn chạy trong container, tạo Dockerfile/compose nhỏ với Locust image hoặc cài đặt Python + locust trong CI job, rồi chạy lệnh headless trên.
+
+---
+
+## Hướng dẫn đọc kịch bản (test_locust.py)
+- `UTTPortalUser(HttpUser)` xác định hành vi người dùng: `on_start()` gọi login bằng POST.
+- Các task như `trangChu`, `chuongManagement` mô phỏng các endpoint truy cập.
+- Bạn có thể thêm tags (`@tag('...')`) để nhóm test và chạy subset task bằng `-t tagname` hoặc trong UI chọn tag.
+
+Ví dụ chạy chỉ tag `chuong_management`:
+
+```bash
+locust -f tests/test_locust.py --host http://localhost:8000 -t chuong_management --headless -u 50 -r 5 -t 5m --csv=tests/results/chuong_management
+```
+
+---
+
+## Xuất test case / Tích hợp script helpers
+- Nếu repo có `tests/export_testcase.py`, mở file đó để biết mục đích (export test case ra định dạng JSON/CSV hoặc tạo testcases động). Sử dụng script đó để:
+  - Tích hợp test case từ hệ thống khác,
+  - Tạo test case cho Locust tự động,
+  - Lưu test case mẫu vào `tests/testcases/`.
+
+---
+
+## Thu thập metrics & phân tích
+- Kết quả Locust CSV là nguồn chính để tính:
+  - P50/P95/P99 latencies
+  - Requests per second (RPS)
+  - Lỗi / request failures
+- Kết hợp thu thập metrics hệ thống (CPU, memory, network) bằng Prometheus/Grafana hoặc `sar`, `top`, `vmstat` khi chạy bài kiểm thử để tìm nghẽn cổ chai.
+- Lưu kết quả mỗi lần chạy vào `tests/results/<timestamp>/` để dễ so sánh.
+
+---
+
+## Mẫu quy trình kiểm thử (recommended)
+1. Chuẩn bị môi trường test: seed DB (database/), deploy backend dev (port cố định), đảm bảo frontend static hoặc server chạy.
+2. Triển khai kịch bản Locust: chỉnh URL trong `tests/test_locust.py` (hoặc dùng `--host`).
+3. Chạy Locust headless với cấu hình load step (tăng dần user để tìm điểm phá vỡ).
+4. Thu thập logs, CSV, và metrics hệ thống.
+5. Phân tích: latency percentiles, error rates, throughput; xác định bottleneck.
+6. Tối ưu và lặp lại.
+
+---
+
+## Góp phần (Contributing)
+- Nếu bạn thêm test case mới, tạo PR vào thư mục `tests/testcases/` kèm hướng dẫn/tập tin ví dụ.
+- Mô tả rõ kịch bản: mục tiêu test, endpoint, dữ liệu mẫu, và bước chạy.
+
+Commit message mẫu: `tests: add locust testcase for chapter management`.
+
+---
+
+## Tài liệu thêm
+- Xem `docs/comment-change-log.md` để biết ghi chú phát triển.
+- Xem `tests/test_locust.py` trực tiếp để hiểu chi tiết hành vi đã được mô tả.
+
+---
+
+## Liên hệ
+- Chủ repo / liên hệ: @ductien1904
+
+## License
+Nếu repository chưa có license, cân nhắc thêm `LICENSE` (ví dụ MIT) để cho phép chia sẻ script kiểm thử.
+
+---
+
+Nếu bạn muốn, mình có thể tiếp tục các bước sau cho bạn:
+1. Tự động thêm ví dụ lệnh headless với timestamped output (mình sẽ chỉnh README và thêm script ví dụ `tests/run_locust_headless.sh`).
+2. Tạo template test case trong `tests/testcases/` và ví dụ cách export bằng `export_testcase.py` (mình sẽ đọc file và tạo template phù hợp).
+3. Dịch README sang tiếng Anh hoặc làm song ngữ.
+
+Bạn muốn mình làm tiếp bước nào?
